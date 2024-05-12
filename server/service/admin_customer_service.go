@@ -19,6 +19,9 @@ func (c *AdminCustomerService) GetCustomerServiceList(csParams *model.CustomerSe
 }
 
 // 更新客户服务
+// gorm Save：
+// 存在主键字段: 做插入操作
+// 不存在主键字段：做更新操作
 func (c *AdminCustomerService) UpdateCustomerService(csParams *model.CustomerService) error {
 	return global.DB.Transaction(func(tx *gorm.DB) error {
 		return tx.Save(&csParams).Error
@@ -35,8 +38,9 @@ func (c *AdminCustomerService) DeleteCustomerService(csParams *model.CustomerSer
 // 有效性检测任务
 func (c *AdminCustomerService) SubExpirationCheck() error {
 	return global.DB.Transaction(func(tx *gorm.DB) error {
+
 		//服务有效性
-		err := tx.Exec("UPDATE customer_service SET service_status = 0 WHERE service_end_at < ?", time.Now()).Error
+		err := tx.Exec("UPDATE customer_service SET service_status = 0, sub_status = 0 WHERE service_end_at < ?", time.Now()).Error
 		if err != nil {
 			return err
 		}
@@ -106,14 +110,13 @@ func (c *AdminCustomerService) UpdateCustomerServiceTrafficLog(userTrafficLogMap
 	if len(query) == 0 {
 		return nil
 	}
-	return nil
 	return global.DB.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "id"}},
 		DoUpdates: clause.AssignmentColumns([]string{"u", "d"}),
 	}).Create(&query).Error
 }
 
-// 清理流量记录
+// 清理用户流量记录
 func (c *AdminCustomerService) ClearCustomerServiceTrafficLog() error {
 	y, m, _ := time.Now().Date()
 	startTime := time.Date(y, m-2, 1, 0, 0, 0, 0, time.Local) //清除2个月之前的数据

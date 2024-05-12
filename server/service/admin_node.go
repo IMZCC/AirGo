@@ -172,7 +172,7 @@ func (n *AdminNode) ClearNodeTraffic() error {
 	y, m, _ := time.Now().Date()
 	startTime := time.Date(y, m-2, 1, 0, 0, 0, 0, time.Local) //清除2个月之前的数据
 	return global.DB.Transaction(func(tx *gorm.DB) error {
-		return tx.Where("created_at < ?", startTime).Delete(&model.UserTrafficLog{}).Error
+		return tx.Where("created_at < ?", startTime).Delete(&model.NodeTrafficLog{}).Error
 	})
 }
 
@@ -234,7 +234,10 @@ func (n *AdminNode) UpdateNodeStatus(customerServerIDs []int64, trafficLog *mode
 		oldStatus.D, _ = strconv.ParseFloat(fmt.Sprintf("%.2f", float64(trafficLog.D)/duration), 64) //Byte per second
 		oldStatus.U, _ = strconv.ParseFloat(fmt.Sprintf("%.2f", float64(trafficLog.U)/duration), 64)
 		oldStatus.LastTime = now
-		global.LocalCache.Set(fmt.Sprintf("%s%d", constant.CACHE_NODE_STATUS_BY_NODEID, trafficLog.NodeID), oldStatus, 2*time.Minute)
+		global.LocalCache.Set(fmt.Sprintf("%s%d",
+			constant.CACHE_NODE_STATUS_BY_NODEID, trafficLog.NodeID),
+			oldStatus,
+			constant.CAHCE_NODE_STATUS_TIMEOUT*time.Minute)
 	} else {
 		var nodeStatus model.NodeStatus
 		nodeStatus.Status = true
@@ -243,7 +246,10 @@ func (n *AdminNode) UpdateNodeStatus(customerServerIDs []int64, trafficLog *mode
 		nodeStatus.D, _ = strconv.ParseFloat(fmt.Sprintf("%.2f", float64(trafficLog.D)/duration), 64) //Byte per second
 		nodeStatus.U, _ = strconv.ParseFloat(fmt.Sprintf("%.2f", float64(trafficLog.U)/duration), 64)
 		nodeStatus.LastTime = time.Now()
-		global.LocalCache.Set(fmt.Sprintf("%s%d", constant.CACHE_NODE_STATUS_BY_NODEID, trafficLog.NodeID), nodeStatus, 2*time.Minute)
+		global.LocalCache.Set(fmt.Sprintf("%s%d", constant.CACHE_NODE_STATUS_BY_NODEID,
+			trafficLog.NodeID),
+			nodeStatus,
+			constant.CAHCE_NODE_STATUS_TIMEOUT*time.Minute)
 	}
 }
 

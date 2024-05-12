@@ -15,9 +15,20 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// AGGetNodeInfo
+// @Tags [public api] node
+// @Summary 获取节点配置信息
+// @Produce json
+// @Param id query int64 true "节点ID"
+// @Param key query string true "节点密钥"
+// @Success 200 {object} model.Node "成功"
+// @Failure 400  "请求错误"
+// @Failure 304  "数据和上次一致"
+// @Router /api/public/airgo/node/getNodeInfo [get]
 func AGGetNodeInfo(ctx *gin.Context) {
 	//验证key
 	if global.Server.Subscribe.TEK != ctx.Query("key") {
+		ctx.AbortWithStatus(400)
 		return
 	}
 	id := ctx.Query("id")
@@ -30,6 +41,7 @@ func AGGetNodeInfo(ctx *gin.Context) {
 	err = global.DB.Model(&model.Node{}).Where(&model.Node{ID: nodeIDInt}).Preload("Access").First(&node).Error
 	if err != nil {
 		global.Logrus.Error("AGGetNodeInfo error,id="+id, err.Error())
+		ctx.AbortWithStatus(400)
 		return
 	}
 	//处理ss节点加密
@@ -40,6 +52,16 @@ func AGGetNodeInfo(ctx *gin.Context) {
 	api.EtagHandler(node, ctx)
 }
 
+// AGReportNodeStatus
+// @Tags [public api] node
+// @Summary 上报节点状态
+// @Produce json
+// @Param key query string true "节点密钥"
+// @Param data body model.AGNodeStatus true "参数"
+// @Success 200 {object} string "成功"
+// @Failure 400  "请求错误"
+// @Failure 304  "数据和上次一致"
+// @Router /api/public/airgo/node/AGReportNodeStatus [post]
 func AGReportNodeStatus(ctx *gin.Context) {
 	//验证key
 	if global.Server.Subscribe.TEK != ctx.Query("key") {
@@ -53,7 +75,8 @@ func AGReportNodeStatus(ctx *gin.Context) {
 		return
 	}
 	//处理探针
-	cacheStatus, ok := global.LocalCache.Get(fmt.Sprintf("%s%d", constant.CACHE_NODE_STATUS_BY_NODEID, AGNodeStatus.ID))
+	cacheStatus, ok := global.LocalCache.Get(fmt.Sprintf("%s%d",
+		constant.CACHE_NODE_STATUS_BY_NODEID, AGNodeStatus.ID))
 	if ok {
 		oldStatus := cacheStatus.(model.NodeStatus)
 		oldStatus.Status = true
@@ -61,7 +84,10 @@ func AGReportNodeStatus(ctx *gin.Context) {
 		oldStatus.Mem = AGNodeStatus.Mem
 		oldStatus.Disk = AGNodeStatus.Disk
 		//oldStatus.Uptime=AGNodeStatus.Uptime
-		global.LocalCache.Set(fmt.Sprintf("%s%d", constant.CACHE_NODE_STATUS_BY_NODEID, AGNodeStatus.ID), oldStatus, 2*time.Minute) //2分钟后过期
+		global.LocalCache.Set(fmt.Sprintf("%s%d",
+			constant.CACHE_NODE_STATUS_BY_NODEID, AGNodeStatus.ID),
+			oldStatus,
+			constant.CAHCE_NODE_STATUS_TIMEOUT*time.Minute)
 	} else {
 		var status model.NodeStatus
 		status.Status = true
@@ -69,11 +95,24 @@ func AGReportNodeStatus(ctx *gin.Context) {
 		status.CPU = AGNodeStatus.CPU
 		status.Mem = AGNodeStatus.Mem
 		status.Disk = AGNodeStatus.Disk
-		global.LocalCache.Set(fmt.Sprintf("%s%d", constant.CACHE_NODE_STATUS_BY_NODEID, AGNodeStatus.ID), status, 2*time.Minute) //2分钟后过期
+		global.LocalCache.Set(fmt.Sprintf("%s%d",
+			constant.CACHE_NODE_STATUS_BY_NODEID, AGNodeStatus.ID),
+			status,
+			constant.CAHCE_NODE_STATUS_TIMEOUT*time.Minute)
 	}
 	ctx.String(200, "success")
 }
 
+// AGGetUserlist
+// @Tags [public api] node
+// @Summary 获取用户列表
+// @Produce json
+// @Param id query int64 true "节点ID"
+// @Param key query string true "节点密钥"
+// @Success 200 {object} string "成功"
+// @Failure 400  "请求错误"
+// @Failure 304  "数据和上次一致"
+// @Router /api/public/airgo/user/AGGetUserlist [get]
 func AGGetUserlist(ctx *gin.Context) {
 	//验证key
 	if global.Server.Subscribe.TEK != ctx.Query("key") {
@@ -137,6 +176,16 @@ func AGGetUserlist(ctx *gin.Context) {
 	api.EtagHandler(users, ctx)
 }
 
+// AGReportUserTraffic
+// @Tags [public api] node
+// @Summary 上报用户流量
+// @Produce json
+// @Param key query string true "节点密钥"
+// @Param data body model.AGUserTraffic true "参数"
+// @Success 200 {object} string "成功"
+// @Failure 400  "请求错误"
+// @Failure 304  "数据和上次一致"
+// @Router /api/public/airgo/user/AGReportUserTraffic [post]
 func AGReportUserTraffic(ctx *gin.Context) {
 	//验证key
 	if global.Server.Subscribe.TEK != ctx.Query("key") {
@@ -188,26 +237,52 @@ func AGReportUserTraffic(ctx *gin.Context) {
 		trafficLog.U = trafficLog.D + v.Download
 
 	}
-	// 处理探针
-	global.GoroutinePool.Submit(func() {
-		service.AdminNodeSvc.UpdateNodeStatus(customerServerIDs, &trafficLog)
+	// 处理节点状态
+	_ = global.Queue.Publish(constant.NODE_BACKEND_TASK, &service.NodeBackendServiceMessage{
+		Title: constant.NODE_BACKEND_TASK_TITLE_NODE_STATUS,
+		Data: &service.NodeStatusMessage{
+			CustomerServerIDs: customerServerIDs,
+			NodeTrafficLog:    &trafficLog,
+		},
 	})
 	//插入节点流量统计
-	global.GoroutinePool.Submit(func() {
-		service.AdminNodeSvc.UpdateNodeTraffic(&trafficLog, &AGUserTraffic)
+	_ = global.Queue.Publish(constant.NODE_BACKEND_TASK, &service.NodeBackendServiceMessage{
+		Title: constant.NODE_BACKEND_TASK_TITLE_NODE_TRAFFIC,
+		Data: &service.NodeTrafficMessage{
+			NodeTrafficLog: &trafficLog,
+			AGUserTraffic:  &AGUserTraffic,
+		},
 	})
 	//插入用户流量统计
-	global.GoroutinePool.Submit(func() {
-		service.AdminCustomerServiceSvc.UpdateCustomerServiceTrafficLog(userTrafficLogMap, customerServerIDs)
+	_ = global.Queue.Publish(constant.NODE_BACKEND_TASK, &service.NodeBackendServiceMessage{
+		Title: constant.NODE_BACKEND_TASK_TITLE_UPDATE_CUSTOMER_TRAFFICLOG,
+		Data: &service.UpdateCustomerTrafficLogMessage{
+			CustomerServerIDs: customerServerIDs,
+			UserTrafficLogMap: userTrafficLogMap,
+		},
 	})
 	//更新用户已用流量信息
-	global.GoroutinePool.Submit(func() {
-		service.AdminCustomerServiceSvc.UpdateCustomerServiceTrafficUsed(&customerServiceArr, customerServerIDs)
+	_ = global.Queue.Publish(constant.NODE_BACKEND_TASK, &service.NodeBackendServiceMessage{
+		Title: constant.NODE_BACKEND_TASK_TITLE_UPDATE_CUSTOMER_TRAFFICUSED,
+		Data: &service.UpdateCustomerTrafficUsedMessage{
+			CustomerServerIDs:   customerServerIDs,
+			CustomerServiceList: &customerServiceArr,
+		},
 	})
 	ctx.String(200, "success")
 
 }
 
+// AGReportNodeOnlineUsers
+// @Tags [public api] node
+// @Summary 上报在线用户
+// @Produce json
+// @Param key query string true "节点密钥"
+// @Param data body model.AGOnlineUser true "参数"
+// @Success 200 {object} string "成功"
+// @Failure 400  "请求错误"
+// @Failure 304  "数据和上次一致"
+// @Router /api/public/airgo/user/AGReportNodeOnlineUsers [post]
 func AGReportNodeOnlineUsers(ctx *gin.Context) {
 	//验证key
 	if global.Server.Subscribe.TEK != ctx.Query("key") {

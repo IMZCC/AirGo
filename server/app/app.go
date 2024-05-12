@@ -95,7 +95,7 @@ func (a *App) InitGlobalVariable() {
 	settings, _, err := service.CommonSqlFind[model.Server, string, model.Server]("id = 1")
 	if err != nil {
 		global.Logrus.Error("系统配置获取失败", err.Error())
-		return
+		panic(err)
 	}
 	global.Server = settings
 
@@ -131,6 +131,7 @@ func (a *App) InitTasks() {
 	service.InitTgBotSvc()       //tg bot
 	service.InitOrderSvc()       //订单
 	service.InitPushMessageSvc() //推送消息
+	service.InitNodeBackendSvc() //处理节点后端并发请求
 }
 
 func (a *App) Start() {
@@ -142,7 +143,7 @@ func (a *App) Update() {
 	if err != nil {
 		fmt.Println(err)
 	}
-	service.AdminServerSvc.ChangeDataForUpdate()
+	err = service.AdminServerSvc.ChangeDataForUpdate()
 	if err != nil {
 		fmt.Println(err)
 	}

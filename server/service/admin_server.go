@@ -206,7 +206,8 @@ func (s *AdminServer) Reload() error {
 
 // 版本升级时，额外需要处理的数据，例如数据库字段值批量修改
 func (s *AdminServer) ChangeDataForUpdate() error {
-	return global.DB.Transaction(func(tx *gorm.DB) error {
+	// update for v0.2.6
+	err := global.DB.Transaction(func(tx *gorm.DB) error {
 		err := tx.Exec("UPDATE node SET protocol = 'hysteria2' WHERE protocol = 'hysteria' ").Error
 		if err != nil {
 			return err
@@ -221,5 +222,47 @@ func (s *AdminServer) ChangeDataForUpdate() error {
 		}
 		return nil
 	})
+	if err != nil {
+		return err
+	}
 
+	// update for v0.2.8
+	var server model.Server
+	err = global.DB.First(&server).Error
+	if err != nil {
+		return err
+	}
+	if len(server.Finance.Jackpot) == 0 {
+		server.Finance.Jackpot = model.Jackpot{
+			{0.01, 6},
+			{0.02, 5},
+			{0.03, 4},
+			{0.04, 3},
+			{0.05, 2},
+			{0.06, 1},
+		}
+		err = global.DB.Transaction(func(tx *gorm.DB) error {
+			return tx.Save(server).Error
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	// update for v0.2.9
+	if server.Subscribe.SurgeRule == "" || server.Subscribe.ClashRule == "" {
+		server.Subscribe.SurgeRule = constant.DEFAULT_SURGE_RULE
+		server.Subscribe.ClashRule = constant.DEFAULT_CLASH_RULE
+		err = global.DB.Transaction(func(tx *gorm.DB) error {
+			return tx.Save(server).Error
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	if err != nil {
+		return err
+	}
+	return nil
 }

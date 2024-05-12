@@ -15,6 +15,7 @@ export const usePublicStore = defineStore('publicStore', {
         } as Base64CaptchaInfo,
         publicSetting:{
             enable_register: true,          // 是否开启注册
+            enable_base64_captcha:true, //是否开启注册图片验证码
             enable_email_code: false,       //是否开启注册邮箱验证码
             enable_login_email_code: false, //是否开启登录邮箱验证码
             acceptable_email_suffixes: '', //可接受的邮箱后缀
@@ -24,6 +25,7 @@ export const usePublicStore = defineStore('publicStore', {
             withdraw_threshold:0,            //提取到余额的阈值
             enable_lottery:false,
             jackpot:[] as JackpotItem[],
+            sub_name:'',
         } ,
         acceptable_email_suffixes_arr: [] as string[],    //可接受的邮箱后缀数组
 

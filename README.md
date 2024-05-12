@@ -12,11 +12,14 @@
 
 <hr/>
 
-支持：vless，vmess，shadowsocks，hysteria2
+Supported protocols：Vless，Vmess，shadowsocks，Hysteria2
 
 
 <div style="color: darkgray">AirGo, front and rear end separation, multi user, multi protocol proxy service management system, simple and easy to use.</div>
 <div style="color: darkgray">support: vless，vmess，shadowsocks，hysteria2</div>
+
+<hr/>
+
 
 <hr/>
 
@@ -34,7 +37,6 @@
   * [2-2 前端](#2-2-前端)
     * [2-2-1 部署到 Vercel 等云平台](#2-2-1-部署到-vercel-等云平台)
     * [2-2-2 部署到 Nginx、Caddy、OpenResty 等 Web 应用服务器](#2-2-2-部署到-nginxcaddyopenresty-等-web-应用服务器)
-    * [2-2-3 设置部分个性化数据](#2-2-3-设置部分个性化数据)
 * [3 配置ssl（可选）](#3-配置ssl可选)
   * [3-1 给前端设置ssl证书](#3-1-给前端设置ssl证书)
   * [3-2 给后端设置ssl证书](#3-2-给后端设置ssl证书)
@@ -50,14 +52,16 @@
   * [6-1 更新后端](#6-1-更新后端)
   * [6-2 更新前端](#6-2-更新前端)
 * [7 命令行](#7-命令行)
-* [8 开发](#8-开发)
+* [8 更多说明](#8-更多说明)
 <!-- TOC -->
 
-TG频道：[https://t.me/Air_Go](https://t.me/Air_Go)
+<br>
 
+>TG频道：[https://t.me/Air_Go](https://t.me/Air_Go)
 TG群组：[https://t.me/AirGo_Group](https://t.me/AirGo_Group)
-
 文档上次更新日期：2024.4.8
+
+<br>
 
 # 面板部分功能展示
 
@@ -198,24 +202,17 @@ services:
 ## 2-2 前端
 
 ### 2-2-1 部署到 Vercel 等云平台
-- fork本项目，修改`./web/index.html`的`window.httpurl`字段为自己的后端地址。由于vercel的限制，请填https接口地址
+- fork本项目，修改`./web/index.html`的`window.httpurl`字段为自己的后端地址，，可以设置多个，以英文符号 `|` 分割。由于vercel的限制，请填https接口地址
 - 登录[Vercel](https://vercel.com)，Add New Project，参考下图配置，注意红圈内的设置！
   ![image](https://telegraph-image.pages.dev/file/afe97f45857b988ebd005.png)
 - 部署成功后，自定义域名即可（域名解析到76.76.21.21)
 
 ### 2-2-2 部署到 Nginx、Caddy、OpenResty 等 Web 应用服务器
-推荐使用 `github codespaces`编译，这不会在您电脑上安装额外的依赖
 
-- fork本项目，修改`./web/index.html`的`window.httpurl`字段为自己的后端地址
+- 下载 release 中编译好的静态资源的 `AirGo-web.zip`
+- 修改`./web/index.html`的`window.httpurl`字段为自己的后端地址，可以设置多个，以英文符号 `|` 分割
 - 在 项目/web/ 下，执行  `npm i && npm run build`
 - 打包后的静态资源文件夹为 web，将web文件夹上传到服务器合适位置。新建网站（纯静态），网站位置选择该web文件夹
-
-### 2-2-3 设置部分个性化数据
-修改`./web/index.html`中的 `keywords`，`description`，`title`，`favicon.ico` 等
-
-
-
-
 
 # 3 配置ssl（可选）
 
@@ -263,7 +260,7 @@ sqlite:
 ```
 bash <(curl -Ls https://raw.githubusercontent.com/ppoonk/V2bX/main/scripts/install.sh)
 ```
-- 安装完成后请根据需要在```/usr/local/AV/config.json```中修改配置文件
+- 安装完成后请根据需要在```/etc/V2bX/config.json```中修改配置文件
 - 启动：使用管理脚本```AV```或直接 `systemctl start AV`
 
 ### 5-1-2 docker 安装 V2bX
@@ -358,16 +355,16 @@ services:
 # 7 命令行
 
 ```
-./AirGo help                    Help about any command
-./AirGo reset --resetAdmin      reset admin password
-./AirGo start                   start AirGo
-./AirGo update                  update AirGo
-./AirGo version                 show the version of AirGo
+./AirGo help                    获取帮助
+./AirGo reset --resetAdmin      重置admin password
+./AirGo start                   启动AirGo, 指定配置文件路径：./AirGo start --config path2/config.yaml
+./AirGo update                  更新数据库相关AirGo数据
+./AirGo version                 查看AirGo的当前版本
 ```
 
-# 8 开发
+# 8 更多说明
 
-[点击查看更多](https://github.com/ppoonk/AirGo/wiki)
+[点击查看更多](https://github.com/ppoonk/AirGo/wiki/Wiki)
 
 
 

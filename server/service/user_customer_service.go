@@ -1,15 +1,15 @@
 package service
 
-import "C"
 import (
 	"fmt"
+	"math"
+	"strings"
+	"time"
+
 	"github.com/ppoonk/AirGo/global"
 	"github.com/ppoonk/AirGo/model"
 	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
-	"math"
-	"strings"
-	"time"
 )
 
 type CustomerService struct{}
@@ -19,21 +19,33 @@ var CustomerServiceSvc *CustomerService
 func (c *CustomerService) GetCustomerServiceListByUserID(params *model.QueryParams, uID int64) (*model.CommonDataResp, error) {
 	var data model.CommonDataResp
 	var csArr []model.CustomerService
-	_, dataSql := CommonSqlFindSqlHandler(params)
+	totalSql, dataSql := CommonSqlFindSqlHandler(params)
 	dataSql = dataSql[strings.Index(dataSql, "WHERE ")+6:]
+	totalSql = totalSql[strings.Index(totalSql, "WHERE ")+6:]
 	//拼接查询参数
 	dataSql = fmt.Sprintf("user_id = %d AND %s", uID, dataSql)
-	err := global.DB.Model(&model.CustomerService{}).Count(&data.Total).Where(dataSql).Find(&csArr).Error
+	totalSql = fmt.Sprintf("user_id = %d AND %s", uID, totalSql)
+	err := global.DB.Model(&model.CustomerService{}).Where(dataSql).Find(&csArr).Error
+	if err != nil {
+		return nil, err
+	}
+	err = global.DB.Model(&model.CustomerService{}).Where(totalSql).Count(&data.Total).Error
 	if err != nil {
 		return nil, err
 	}
 	data.Data = csArr
 	return &data, nil
 }
+
 func (c *CustomerService) GetCustomerServiceList(csParams *model.CustomerService) (*[]model.CustomerService, error) {
 	var csArr []model.CustomerService
 	err := global.DB.Model(&model.CustomerService{}).Where(&csParams).Find(&csArr).Error
 	return &csArr, err
+}
+func (c *CustomerService) DeleteCustomerService(csParams *model.CustomerService) error {
+	return global.DB.Transaction(func(tx *gorm.DB) error {
+		return tx.Delete(&csParams).Error
+	})
 }
 
 func (c *CustomerService) FirstCustomerService(csParams *model.CustomerService) (*model.CustomerService, error) {

@@ -11,7 +11,13 @@ import (
 	"time"
 )
 
-// 获取用户动态路由
+// GetMenuList
+// @Tags [customer api] menu
+// @Summary 获取用户菜单
+// @Produce json
+// @Param Authorization header string false "Bearer 用户token"
+// @Success 200 {object} response.ResponseStruct "请求成功；正常：业务代码 code=0；错误：业务代码code=1"
+// @Router /api/customer/menu/getMenuList [get]
 func GetMenuList(ctx *gin.Context) {
 	uIdInt, _ := api.GetUserIDFromGinContext(ctx)
 	//查cache
@@ -40,6 +46,9 @@ func GetMenuList(ctx *gin.Context) {
 		return
 	}
 	route := service.MenuSvc.GetMenus(menuSlice)
-	global.LocalCache.Set(fmt.Sprintf("%s%d", constant.CACHE_USER_MENU_LIST_BY_ID, uIdInt), *route, 1*time.Minute) //缓存改为1分钟
+	global.LocalCache.Set(fmt.Sprintf("%s%d",
+		constant.CACHE_USER_MENU_LIST_BY_ID, uIdInt),
+		*route,
+		constant.CAHCE_USER_MENUS_TIMEOUT*time.Minute)
 	response.OK("GetMenuList success", route, ctx)
 }

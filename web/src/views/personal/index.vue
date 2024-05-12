@@ -1,6 +1,6 @@
 <template>
   <div class="personal layout-pd">
-    <el-row>
+    <el-row gutter="20">
       <!-- 个人信息 -->
       <el-col :xs="24" :sm="24">
         <el-card shadow="hover">
@@ -29,10 +29,12 @@
           </div>
         </el-card>
       </el-col>
-      <el-col :span="24">
+      <el-col :xs="24" :sm="12">
         <el-card shadow="hover" class="mt15 personal-edit">
-          <el-divider content-position="left"><span>{{ $t("message.adminServer.Server.push_method") }}</span>
+          <div class="personal-edit-title">{{$t('message.personal.message_setting')}}</div>
+          <el-divider content-position="left"><span>{{ $t("message.personal.push_setting") }}</span>
           </el-divider>
+          <el-text class="mx-1">{{ $t("message.adminServer.Server.push_method") }} :</el-text>
           <el-form :model="userInfos" label-width="100px"
                    label-position="left">
             <el-form-item :label="$t('message.adminServer.Server.enable_tg_bot')" class="label">
@@ -72,9 +74,9 @@
           </el-form>
         </el-card>
       </el-col>
-      <el-col :span="24">
+      <el-col :xs="24" :sm="12">
         <el-card shadow="hover" class="mt15 personal-edit">
-          <div class="personal-edit-title">{{$t('message.personal.login_password')}}</div>
+          <div class="personal-edit-title">{{$t('message.personal.account_setting')}}</div>
           <div class="personal-edit-safe-box">
             <div class="personal-edit-safe-item">
               <div class="personal-edit-safe-item-left">
@@ -130,7 +132,6 @@
           @start="startCallback"
           @end="endCallback"
         />
-        <div id="my-lucky"></div>
       </el-dialog>
     </div>
 
@@ -197,7 +198,7 @@ const setJackpot=()=>{
 //开始抽奖
 const startCallback =() =>{
   // 调用抽奖组件的play方法开始游戏
-  userStore.clockin().then((res)=>{
+  userStore.clockIn().then((res)=>{
     myLuckyRef.value.play()
     const index = res.data.data //res.data 格式： {"total":1,"data":1}
     myLuckyRef.value.stop(index)
@@ -446,9 +447,10 @@ const onSubmitForNotice = () => {
 
 .dialog {
   :deep(.el-dialog) {
+    box-shadow: 0 0px 0px rgb(0 0 0 / 0%);
     background: transparent;
     //.el-dialog__body {
-    //  //padding: 0 !important;
+    //  padding: 0 !important;
     //}
     //.el-dialog__header {
     //  display: none !important;
